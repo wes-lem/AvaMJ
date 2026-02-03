@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Ranking - AvaMJ{% endblock %}
+
+{% block content %}
+<h1 class="h2 fw-bold mb-4">Ranking de Gamificação</h1>
+
+<div class="card shadow-sm overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-uppercase small fw-medium">Posição</th>
+                    <th class="text-uppercase small fw-medium">Aluno</th>
+                    <th class="text-uppercase small fw-medium">XP</th>
+                    <th class="text-uppercase small fw-medium">Nível</th>
+                    <th class="text-uppercase small fw-medium">Medalhas</th>
+                </tr>
+            </thead>
+            <tbody id="ranking-body">
+                <tr>
+                    <td colspan="5" class="text-muted">Carregando ranking...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<p class="mt-3 text-muted small">Dados vindos de /api/gamification/ranking</p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function() {
+        const tbody = document.getElementById('ranking-body');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+        fetch('/api/gamification/ranking', { signal: controller.signal })
+            .then(r => r.json())
+            .then(data => {
+                clearTimeout(timeoutId);
+                if (!data.ranking || data.ranking.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Nenhum dado ainda.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.ranking.map((row, i) =>
+                    '<tr><td>' + (i + 1) + '</td><td>' + (row.name || '-') + '</td><td>' + (row.xp ?? 0) + '</td><td>' + (row.level ?? 1) + '</td><td>' + ((row.badges || []).join(', ') || '-') + '</td></tr>'
+                ).join('');
+            })
+            .catch(() => {
+                clearTimeout(timeoutId);
+                tbody.innerHTML = '<tr><td colspan="5" class="text-danger">Erro ou timeout ao carregar. Tente de novo.</td></tr>';
+            });
+    })();
+</script>
+{% endblock %}
